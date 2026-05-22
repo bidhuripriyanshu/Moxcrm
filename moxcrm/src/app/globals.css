@@ -1,28 +1,295 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=DM+Mono:wght@400;500&display=swap');
 @import "tailwindcss";
 
+/* ════════════════════════════════════════════
+   MoxCRM Design System — Tokens & Utilities
+   ════════════════════════════════════════════ */
+
 :root {
-  --background: #010817;
-  --foreground: #ffffff;
+  /* ── Navy scale ── */
+  --navy: #07111F;
+  --navy2: #0C1A2E;
+  --navy3: #112038;
+  --navy4: #162844;
+
+  /* ── Borders ── */
+  --b: rgba(255, 255, 255, 0.07);
+  --b2: rgba(255, 255, 255, 0.12);
+  --b3: rgba(255, 255, 255, 0.18);
+
+  /* ── Brand colors ── */
+  --cyan: #38BDF8;
+  --cd: #0EA5E9;
+  --indigo: #6366F1;
+  --rose: #E05C82;
+  --em: #10B981;
+  --amber: #F59E0B;
+  --violet: #A78BFA;
+  --gold: #F0C060;
+
+  /* ── Text opacity scale ── */
+  --t0: #F0F4FF;
+  --t1: rgba(240, 244, 255, 0.72);
+  --t2: rgba(240, 244, 255, 0.42);
+  --t3: rgba(240, 244, 255, 0.22);
+  --t4: rgba(240, 244, 255, 0.10);
+  --t5: rgba(240, 244, 255, 0.05);
+
+  /* ── Color light / border pairs ── */
+  --cl: rgba(56, 189, 248, 0.10);
+  --cb: rgba(56, 189, 248, 0.18);
+  --gl: rgba(16, 185, 129, 0.10);
+  --gb: rgba(16, 185, 129, 0.18);
+  --al: rgba(245, 158, 11, 0.10);
+  --ab: rgba(245, 158, 11, 0.18);
+  --rl: rgba(224, 92, 130, 0.10);
+  --rb: rgba(224, 92, 130, 0.18);
+  --vl: rgba(167, 139, 250, 0.10);
+  --vb: rgba(167, 139, 250, 0.18);
+  --il: rgba(99, 102, 241, 0.10);
+  --ib: rgba(99, 102, 241, 0.18);
+  --gol: rgba(240, 192, 96, 0.10);
+  --gob: rgba(240, 192, 96, 0.20);
+
+  /* ── Typography ── */
+  --f: 'Plus Jakarta Sans', sans-serif;
+  --mono: 'DM Mono', monospace;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-background: var(--navy);
+  --color-foreground: var(--t0);
+  --color-navy: var(--navy);
+  --color-navy2: var(--navy2);
+  --color-navy3: var(--navy3);
+  --color-navy4: var(--navy4);
+  --color-cyan: var(--cyan);
+  --color-indigo: var(--indigo);
+  --color-rose: var(--rose);
+  --color-emerald: var(--em);
+  --color-amber: var(--amber);
+  --color-violet: var(--violet);
+  --color-gold: var(--gold);
 }
 
-* {
+/* ── Base resets ── */
+*,
+*::before,
+*::after {
   box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
 html {
   scroll-behavior: smooth;
+  background: #03080F;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: 'Inter', Arial, Helvetica, sans-serif;
+  font-family: var(--f);
+  background: var(--navy);
+  color: var(--t0);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── Custom scrollbar ── */
+::-webkit-scrollbar {
+  width: 3px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.07);
+}
+
+/* ════════════════════════════════════════════
+   Reusable Utility Classes (via @utility)
+   ════════════════════════════════════════════ */
+
+/* ── Tag variants ── */
+@utility tag-base {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 99px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+@utility tag-green {
+  @apply tag-base;
+  background: var(--gl);
+  color: #34D399;
+  border: 1px solid var(--gb);
+}
+
+@utility tag-yellow {
+  @apply tag-base;
+  background: var(--al);
+  color: #FCD34D;
+  border: 1px solid var(--ab);
+}
+
+@utility tag-rose {
+  @apply tag-base;
+  background: var(--rl);
+  color: #F9A8C9;
+  border: 1px solid var(--rb);
+}
+
+@utility tag-cyan {
+  @apply tag-base;
+  background: var(--cl);
+  color: var(--cyan);
+  border: 1px solid var(--cb);
+}
+
+@utility tag-indigo {
+  @apply tag-base;
+  background: var(--il);
+  color: #A5B4FC;
+  border: 1px solid var(--ib);
+}
+
+@utility tag-violet {
+  @apply tag-base;
+  background: var(--vl);
+  color: var(--violet);
+  border: 1px solid var(--vb);
+}
+
+@utility tag-gold {
+  @apply tag-base;
+  background: var(--gol);
+  color: var(--gold);
+  border: 1px solid var(--gob);
+}
+
+@utility tag-neutral {
+  @apply tag-base;
+  background: var(--t5);
+  color: var(--t2);
+  border: 1px solid var(--b);
+}
+
+/* ── Button variants ── */
+@utility btn-base {
+  height: 30px;
+  padding: 0 14px;
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: var(--f);
+  border: none;
+  transition: all 0.15s;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+@utility btn-ghost {
+  @apply btn-base;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--b2);
+  color: var(--t1);
+}
+
+@utility btn-primary {
+  @apply btn-base;
+  background: var(--cyan);
+  color: #07111F;
+  font-weight: 700;
+}
+
+@utility btn-green {
+  @apply btn-base;
+  background: var(--em);
+  color: #07111F;
+  font-weight: 700;
+}
+
+/* ── Card ── */
+@utility mox-card {
+  background: var(--navy2);
+  border: 1px solid var(--b);
+  border-radius: 12px;
+  padding: 14px 16px;
+}
+
+/* ── Badge (small pill) ── */
+@utility mox-badge {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 99px;
+  background: var(--cl);
+  color: var(--cyan);
+  border: 1px solid var(--cb);
+}
+
+/* ── Section label ── */
+@utility section-label {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--t3);
+}
+
+/* ── Pulse animation ── */
+@utility pulse-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  animation: pulse-anim 1.4s ease-in-out infinite;
+}
+
+@keyframes pulse-anim {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.4;
+    transform: scale(0.7);
+  }
+}
+
+/* ── Progress bar ── */
+@utility progress-track {
+  height: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+@utility progress-fill {
+  height: 100%;
+  border-radius: 99px;
+}
+
+/* ── Nav badge ── */
+@utility nav-badge {
+  margin-left: auto;
+  font-size: 9px;
+  font-weight: 700;
+  background: var(--cl);
+  color: var(--cyan);
+  padding: 1px 6px;
+  border-radius: 99px;
+}
+
+@utility nav-badge-green {
+  margin-left: auto;
+  font-size: 9px;
+  font-weight: 700;
+  background: var(--gl);
+  color: #34D399;
+  padding: 1px 6px;
+  border-radius: 99px;
 }

@@ -1,16 +1,14 @@
 import "./globals.css";
 
 export const metadata = {
-  title:"MoxCRM",
-  description: "Welcome to MoxCRM",
+  title: "MoxCRM — Silent CRM",
+  description: "The CRM that fills itself. Deals auto-created from Moxsend replies.",
 };
 
 export default function RootLayout({ children }) {
   return (
-  <html>
-      <body className="min-h-full flex flex-col">{children}</body>
-
-  </html>
-    
+    <html lang="en">
+      <body>{children}</body>
+    </html>
   );
 }
