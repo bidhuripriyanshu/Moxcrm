@@ -29,6 +29,7 @@ enum HeatStatus {
   DORMANT
 }
 
+
 enum DealStage {
   REPLIED        // prospect replied to campaign — entry point
   CONTACTED      // rep has personally followed up
@@ -39,6 +40,7 @@ enum DealStage {
   LOST           // deal dead
   PAUSED         // GCC cultural pause (Ramadan, Eid etc.)
 }
+
 
 enum DealSource {
   INBOUND_REPLY  // came in via Moxsend campaign reply
@@ -205,6 +207,7 @@ model Deal {
 
   @@map("deals")
 }
+
 model Email {
   id          String   @id @default(cuid())
 
