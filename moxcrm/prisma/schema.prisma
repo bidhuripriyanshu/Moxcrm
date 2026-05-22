@@ -1,0 +1,259 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum IntentLabel {
+  HOT
+  WARM
+  NURTURE
+  COLD
+  UNCLASSIFIED
+}
+
+enum HeatStatus {
+  HOT
+  WARMING
+  STABLE
+  COOLING
+  COLD
+  DORMANT
+}
+
+enum DealStage {
+  REPLIED        // prospect replied to campaign — entry point
+  CONTACTED      // rep has personally followed up
+  MEETING        // meeting booked via Calendly
+  PROPOSAL       // quote/proposal sent via Moxquote
+  NEGOTIATION    // pricing discussion active
+  WON            // deal closed
+  LOST           // deal dead
+  PAUSED         // GCC cultural pause (Ramadan, Eid etc.)
+}
+
+enum DealSource {
+  INBOUND_REPLY  // came in via Moxsend campaign reply
+  MANUAL         // rep created manually
+  IMPORT         // bulk imported
+}
+
+enum ContactSource {
+  CAMPAIGN_REPLY
+  MANUAL
+  IMPORT
+}
+
+enum GCCRegion {
+  INDIA
+  UAE
+  SAUDI_ARABIA
+  QATAR
+  KUWAIT
+  BAHRAIN
+  OMAN
+  OTHER
+}
+
+model Contact {
+  id            String        @id @default(cuid())
+
+  // ── core identity ─────────────────────────────────────────
+  email         String        @unique
+  firstName     String?
+  lastName      String?
+  fullName      String?                          // denormalised for fast display
+  company       String?
+  jobTitle      String?
+  phone         String?
+  linkedinUrl   String?
+  avatarUrl     String?
+
+  // ── source tracking ───────────────────────────────────────
+  source        ContactSource @default(CAMPAIGN_REPLY)
+  campaignId    String?                          // which campaign brought them in
+
+  // ── GCC intelligence ──────────────────────────────────────
+  region        GCCRegion     @default(OTHER)
+  timezone      String?                          // e.g. "Asia/Dubai"
+  preferredLang String?       @default("en")    // "en" | "ar" | "hi"
+
+  // ── engagement baseline (for heat score) ─────────────────
+  avgReplyTimeHrs  Float?                        // 30-day rolling average reply time
+  totalEmailsSent  Int        @default(0)
+  totalReplies     Int        @default(0)
+  lastContactedAt  DateTime?
+  lastRepliedAt    DateTime?
+
+  // ── org scoping (multi-tenant) ────────────────────────────
+  organisationId   String
+
+  // ── meta ─────────────────────────────────────────────────
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  isArchived    Boolean       @default(false)
+
+  // ── relations ─────────────────────────────────────────────
+  deals         Deal[]
+  emails        Email[]
+
+  // ── indexes ───────────────────────────────────────────────
+  @@index([email])
+  @@index([organisationId])
+  @@index([organisationId, lastRepliedAt])
+  @@index([region])
+
+  @@map("contacts")
+}
+
+model Deal {
+  id              String      @id @default(cuid())
+
+  // ── core fields ───────────────────────────────────────────
+  title           String?                         // auto-generated if null: "{Company} — {Campaign}"
+  stage           DealStage   @default(REPLIED)
+  source          DealSource  @default(INBOUND_REPLY)
+  value           Float?                          // deal value in local currency
+  currency        String?     @default("AED")     // ISO 4217
+
+  // ── relations ─────────────────────────────────────────────
+  contactId       String
+  contact         Contact     @relation(fields: [contactId], references: [id])
+  campaignId      String?                         // which Moxsend campaign triggered this
+  assignedRepId   String?                         // sales rep user ID
+
+  // ── Deal DNA — 7 signal values (raw, stored for breakdown UI) ─
+  signalReplySpeedScore    Float   @default(0)   // 0–100, weight 25%
+  signalIntentScore        Float   @default(0)   // 0–100, weight 20% (from Claude)
+  signalOpenCount          Int     @default(0)   // raw count
+  signalOpenScore          Float   @default(0)   // 0–100 normalised, weight 15%
+  signalProposalViews      Int     @default(0)   // raw count from Moxquote
+  signalProposalScore      Float   @default(0)   // 0–100 normalised, weight 15%
+  signalCalendlyBooked     Boolean @default(false)
+  signalCalendlyScore      Float   @default(0)   // 0 or 100, weight 10%
+  signalThreadDepth        Int     @default(0)   // number of emails in thread
+  signalThreadScore        Float   @default(0)   // 0–100 normalised, weight 10%
+  signalForwardDetected    Boolean @default(false)
+  signalForwardScore       Float   @default(0)   // 0 or 100, weight 5%
+
+  // ── Deal DNA — composite score ────────────────────────────
+  dealScore       Float       @default(0)        // 0–100 weighted composite
+  dealScoreAt     DateTime?                       // when score was last calculated
+
+  // ── AI classification ─────────────────────────────────────
+  intentLabel     IntentLabel @default(UNCLASSIFIED)
+  intentConfidence Float?                         // 0.0–1.0
+  intentTopics    String[]    @default([])        // e.g. ["pricing", "team_size"]
+  buyingSignals   String[]    @default([])        // e.g. ["asked for pricing"]
+  objections      String[]    @default([])        // e.g. ["budget concern"]
+  classifiedAt    DateTime?
+
+  // ── Relationship heat ─────────────────────────────────────
+  heatStatus      HeatStatus  @default(STABLE)
+  heatScore       Float       @default(50)        // 0–100
+  heatUpdatedAt   DateTime?
+
+  // ── Next Best Action ──────────────────────────────────────
+  nextAction      String?                         // plain English e.g. "Send pricing now"
+  nextActionDue   DateTime?                       // when to do it by
+  nextActionAt    DateTime?                       // when NBA was last generated
+
+  // ── GCC pause logic ───────────────────────────────────────
+  isPaused        Boolean     @default(false)
+  pauseReason     String?                         // e.g. "Ramadan 2026"
+  pausedAt        DateTime?
+  resumeAt        DateTime?                       // when to auto-resume
+
+  // ── timeline tracking ─────────────────────────────────────
+  replyCount      Int         @default(0)
+  lastReplyAt     DateTime?
+  firstReplyAt    DateTime?
+  lastEmailSentAt DateTime?
+  meetingAt       DateTime?                       // populated by Calendly webhook
+  proposalSentAt  DateTime?                       // populated by Moxquote webhook
+  closedAt        DateTime?
+
+  // ── org scoping (multi-tenant) ────────────────────────────
+  organisationId  String
+
+  // ── meta ──────────────────────────────────────────────────
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  isArchived      Boolean     @default(false)
+  lostReason      String?                         // only set when stage = LOST
+
+  // ── relations ─────────────────────────────────────────────
+  emails          Email[]
+
+  // ── indexes ───────────────────────────────────────────────
+  @@index([contactId])
+  @@index([organisationId])
+  @@index([organisationId, stage])
+  @@index([organisationId, dealScore])
+  @@index([organisationId, heatStatus])
+  @@index([assignedRepId])
+  @@index([campaignId])
+  @@index([createdAt])
+
+  @@map("deals")
+}
+model Email {
+  id          String   @id @default(cuid())
+
+  // ── identifiers ───────────────────────────────────────────
+  messageId   String   @unique               // Postmark MessageID
+  threadId    String?                        // References header — groups thread
+  postmarkId  String?                        // Postmark's internal ID
+
+  // ── content ───────────────────────────────────────────────
+  fromEmail   String
+  fromName    String?
+  toEmail     String
+  subject     String?
+  textBody    String?
+  htmlBody    String?                        // store for rendering in timeline
+  direction   String                         // "inbound" | "outbound"
+
+  // ── AI outputs ────────────────────────────────────────────
+  intentLabel     IntentLabel?
+  intentConfidence Float?
+  topics          String[]    @default([])
+
+  // ── pgvector embedding (Step 10) ─────────────────────────
+  // Raw SQL needed for vector type — see migration note below
+  // embedding   Unsupported("vector(1536)")?
+
+  // ── tracking ──────────────────────────────────────────────
+  openedAt    DateTime?
+  openCount   Int       @default(0)
+  clickCount  Int       @default(0)
+  forwardDetected Boolean @default(false)
+
+  // ── relations ─────────────────────────────────────────────
+  contactId   String
+  contact     Contact  @relation(fields: [contactId], references: [id])
+  dealId      String?
+  deal        Deal?    @relation(fields: [dealId], references: [id])
+
+  // ── org scoping ───────────────────────────────────────────
+  organisationId String
+
+  receivedAt  DateTime
+  createdAt   DateTime @default(now())
+
+  @@index([threadId])
+  @@index([dealId])
+  @@index([contactId])
+  @@index([organisationId])
+  @@index([messageId])
+
+  @@map("emails")
+}
